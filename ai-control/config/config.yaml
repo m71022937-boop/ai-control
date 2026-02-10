@@ -13,10 +13,10 @@ telegram:
 
 # AI Model Settings
 ai:
-  provider: "ollama"  # Options: ollama, openrouter, anthropic
-  model: "llama3"     # Model name
+  provider: "openrouter"  # Options: ollama, openrouter, anthropic
+  model: "moonshotai/kimi-k2.5"  # Model name
   ollama_url: "http://localhost:11434"  # Ollama API URL
-  openrouter_key: ""  # OpenRouter API key
+  openrouter_key: "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"
 
 # Automation Settings
 automation:
