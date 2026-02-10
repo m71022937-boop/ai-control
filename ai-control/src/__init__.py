@@ -11,7 +11,8 @@ from src.agent.executor import ActionExecutor
 from src.ai.model_router import ModelRouter
 from src.connections.telegram import TelegramBot
 from src.utils.config import Config
-from src.utils.logger import logger
+from src.utils.logger import get_logger
+logger = get_logger()
 
 
 class AIControl:

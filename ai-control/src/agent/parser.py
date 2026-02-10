@@ -6,7 +6,8 @@ import re
 from dataclasses import dataclass
 from typing import Optional
 from src.ai.model_router import ModelRouter
-from src.utils.logger import logger
+from src.utils.logger import get_logger
+logger = get_logger()
 
 
 @dataclass

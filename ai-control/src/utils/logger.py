@@ -7,11 +7,14 @@ import os
 from datetime import datetime
 
 
-def setup_logger(name: str = 'ai-control') -> logging.Logger:
+def setup_logger(level: str = "INFO") -> logging.Logger:
     """Set up structured logging"""
     
-    logger = logging.getLogger(name)
-    logger.setLevel(logging.DEBUG)
+    logger = logging.getLogger('ai-control')
+    
+    # Set level from parameter, not config
+    numeric_level = getattr(logging, level.upper(), logging.INFO)
+    logger.setLevel(numeric_level)
     
     # Avoid duplicate handlers
     if logger.handlers:
@@ -44,5 +47,12 @@ def setup_logger(name: str = 'ai-control') -> logging.Logger:
     return logger
 
 
-# Global logger instance
-logger = setup_logger()
+# Global logger instance (lazy initialization to avoid circular import)
+_instance = None
+
+def get_logger():
+    """Get or create logger instance"""
+    global _instance
+    if _instance is None:
+        _instance = setup_logger()
+    return _instance

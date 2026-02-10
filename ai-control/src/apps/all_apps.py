@@ -5,7 +5,8 @@ App Controllers - Support for all applications
 import subprocess
 import os
 from src.apps.base import AppController
-from src.utils.logger import logger
+from src.utils.logger import get_logger
+logger = get_logger()
 
 
 class MT4Controller(AppController):

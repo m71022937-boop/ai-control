@@ -5,7 +5,11 @@ Config Management
 import os
 import yaml
 from typing import Any, Dict, Optional
-from src.utils.logger import logger
+from src.utils.logger import get_logger
+
+
+# Get logger instance
+logger = get_logger()
 
 
 class Config:

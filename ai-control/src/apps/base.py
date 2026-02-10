@@ -5,7 +5,8 @@ App Controller Base Class
 from abc import ABC, abstractmethod
 from typing import Optional
 from src.utils.config import Config
-from src.utils.logger import logger
+from src.utils.logger import get_logger
+logger = get_logger()
 
 
 class AppController(ABC):

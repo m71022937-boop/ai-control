@@ -1,30 +1,46 @@
 """
-Action Executor - Executes planned actions on the PC
+Action Executor - Executes planned actions on the PC with safety
 """
 
 import time
 import subprocess
 from typing import Dict, Any, List
 from src.utils.config import Config
-from src.utils.logger import logger
+from src.utils.logger import get_logger
 from src.apps.base import AppController
+
+logger = get_logger()
 
 
 class ActionExecutor:
-    """Executes planned actions on the PC"""
+    """Executes planned actions on the PC with safety checks"""
+    
+    # Dangerous commands that require confirmation
+    DANGEROUS_COMMANDS = [
+        'rm -rf', 'mkfs', 'dd if=', ':(){:|:&};:', 'chmod 777',
+        'chown', 'fdisk', 'mkfs', 'mount', 'umount',
+    ]
     
     def __init__(self, config: Config):
         self.config = config
         self.controllers: Dict[str, AppController] = {}
+        self.dry_run = config.get('automation.dry_run', False)
+        self.confirm_destructive = config.get('automation.confirm_destructive', True)
         logger.info("Action Executor initialized")
     
-    def execute(self, app: str, steps: List[Dict[str, Any]]) -> str:
-        """Execute a series of steps for an app"""
+    def execute(self, app: str, steps: List[Dict[str, Any]], dry_run: bool = False) -> str:
+        """Execute a series of steps for an app with safety"""
         if not app:
             return "No app specified"
         
         if not steps:
             return "No steps to execute"
+        
+        # Check for dangerous operations
+        if self._contains_dangerous(steps):
+            if not self.confirm_destructive:
+                return "Dangerous operation detected - blocked"
+            logger.warning("Dangerous operations detected")
         
         try:
             # Get or create app controller
@@ -35,29 +51,46 @@ class ActionExecutor:
             for step in steps:
                 action = step.get('action', '')
                 
+                # Dry run mode
+                if dry_run or self.dry_run:
+                    results.append(f"[DRY RUN] {action}: {step}")
+                    continue
+                
                 try:
                     result = self._execute_step(controller, step)
                     results.append(result)
                 except Exception as e:
                     logger.error(f"Step '{action}' failed: {e}")
-                    results.append(f"❌ {action}: {e}")
-                    
-                    # Continue with next step (resilient)
+                    results.append(f"X {action}: {e}")
                     continue
             
             # Summarize results
-            success_count = sum(1 for r in results if r.startswith('✓'))
+            success_count = sum(1 for r in results if r.startswith('O') or r.startswith('['))
             total = len(results)
             
-            if success_count == total:
-                return f"✅ All {total} steps completed successfully!"
+            if total == 0:
+                return "No steps executed"
+            elif success_count == total:
+                return f"All {total} steps completed successfully!"
             else:
-                return f"⚠️ {success_count}/{total} steps completed. Results:\n" + "\n".join(results)
+                return f"{success_count}/{total} steps completed:\n" + "\n".join(results)
                 
         except Exception as e:
             logger.error(f"Execution failed: {e}")
-            return f"❌ Execution failed: {e}"
+            return f"Execution failed: {e}"
     
+    def _contains_dangerous(self, steps: List[Dict[str, Any]]) -> bool:
+        """Check if steps contain dangerous operations"""
+        for step in steps:
+            if step.get('action') == 'run_command':
+                cmd = step.get('command', '').lower()
+                for dangerous in self.DANGEROUS_COMMANDS:
+                    if dangerous in cmd:
+                        return True
+            if step.get('action') == 'delete_file':
+                return True
+        return False
+            
     def _get_controller(self, app: str) -> AppController:
         """Get or create an app controller"""
         if app not in self.controllers:
@@ -122,15 +155,15 @@ class ActionExecutor:
         
         if action in action_map:
             result = action_map[action]()
-            return f"✓ {action}" + (f": {result}" if result else "")
+            return f"OK {action}" + (f": {result}" if result else "")
         else:
             # Try generic method
             method = getattr(controller, action, None)
             if method:
                 result = method(**step)
-                return f"✓ {action}" + (f": {result}" if result else "")
+                return f"OK {action}" + (f": {result}" if result else "")
             else:
-                return f"⚠️ Unknown action: {action}"
+                return f"Unknown action: {action}"
 
 
 class TerminalController(AppController):
@@ -174,16 +207,11 @@ class BrowserController(AppController):
     
     def navigate_url(self, url: str) -> str:
         """Navigate to URL"""
-        subprocess.run(['xdotool', 'key', 'Ctrl+l'])  # Focus address bar
+        subprocess.run(['xdotool', 'key', 'Ctrl+l'])
         time.sleep(0.5)
         subprocess.run(['xdotool', 'type', url])
         subprocess.run(['xdotool', 'key', 'Return'])
         return f"Navigated to {url}"
-    
-    def type_search(self, query: str) -> str:
-        """Type search query"""
-        subprocess.run(['xdotool', 'type', query])
-        return f"Typed: {query}"
 
 
 class MT4Controller(AppController):
@@ -191,7 +219,6 @@ class MT4Controller(AppController):
     
     def open(self) -> str:
         """Open MT4"""
-        # Try common MT4 locations
         paths = [
             '/usr/bin/metatrader4',
             '/opt/mt4/terminal.exe',
@@ -217,8 +244,7 @@ class VSCodeController(AppController):
         return "VS Code opened"
     
     def create_file(self, filename: str, content: str = "") -> str:
-        """Create a new file in VS Code"""
-        # Use code CLI to create file
+        """Create a new file"""
         subprocess.run(['code', '--new-window', filename])
         time.sleep(2)
         return f"Created: {filename}"
@@ -246,20 +272,17 @@ class FileController(AppController):
         if not os.path.exists(path):
             return f"Path not found: {path}"
         
-        # Create subfolders
         categories = {
-            'Images': ['.jpg', '.jpeg', '.png', '.gif', '.svg', '.webp'],
-            'Documents': ['.pdf', '.doc', '.docx', '.txt', '.xls', '.xlsx'],
+            'Images': ['.jpg', '.jpeg', '.png', '.gif', '.svg'],
+            'Documents': ['.pdf', '.doc', '.docx', '.txt'],
             'Videos': ['.mp4', '.mov', '.avi', '.mkv'],
             'Archives': ['.zip', '.tar', '.gz', '.rar'],
-            'Scripts': ['.py', '.js', '.sh', '.bash'],
         }
         
         for folder, extensions in categories.items():
             folder_path = os.path.join(path, folder)
             os.makedirs(folder_path, exist_ok=True)
         
-        # Move files
         moved = []
         for file in os.listdir(path):
             file_path = os.path.join(path, file)
