@@ -1,0 +1,41 @@
+# AI Control Configuration
+
+# Application Settings
+app:
+  name: "AI Control"
+  version: "1.0.0"
+
+# Telegram Bot
+telegram:
+  enabled: true
+  token: "8597107896:AAH64SzkER8rbGmaeV1dS6E8Si0ZBihVX7s"  # Bot: @CLAW_4832_bot
+  chat_id: ""  # Your Telegram chat ID (leave empty, bot will accept you)
+
+# AI Model Settings
+ai:
+  provider: "ollama"  # Options: ollama, openrouter, anthropic
+  model: "llama3"     # Model name
+  ollama_url: "http://localhost:11434"  # Ollama API URL
+  openrouter_key: ""  # OpenRouter API key
+
+# Automation Settings
+automation:
+  default_browser: "chrome"
+  screenshot_path: "/tmp/ai-control"
+  confirm_destructive: true
+  default_timeout: 60  # seconds
+
+# Safety Settings
+safety:
+  max_task_duration: 300  # 5 minutes max per task
+  max_daily_runtime: 36000  # 10 hours
+  allow_shutdown: false
+  require_confirmation:
+    - delete_files
+    - system_commands
+    - install_packages
+
+# Logging
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR
+  file: "~/.ai-control/logs/app.log"
