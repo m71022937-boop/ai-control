@@ -27,17 +27,34 @@ class IntentParser:
     
     # Known apps and their aliases
     APPS = {
+        # Trading
         'mt4': ['mt4', 'metatrader', 'meta trader', 'metatrader 4'],
         'mt5': ['mt5', 'metatrader 5', 'meta trader 5'],
+        # Browsers
         'chrome': ['chrome', 'google chrome', 'browser', 'web browser'],
         'firefox': ['firefox', 'mozilla'],
+        # Editors
         'vscode': ['vscode', 'vs code', 'visual studio code', 'code'],
+        'vim': ['vim', 'vi'],
+        'nano': ['nano'],
+        # Terminal/Shells
         'terminal': ['terminal', 'bash', 'shell', 'cmd', 'command line', 'console'],
-        'files': ['files', 'file manager', 'nautilus', 'dolphin', 'explorer'],
+        'files': ['files', 'file manager', 'nautilus', 'dolphin', 'explorer', 'file'],
+        # Office
         'excel': ['excel', 'spreadsheet', 'ms excel'],
+        'word': ['word', 'ms word'],
+        # Communication
         'telegram': ['telegram', 'telegram app'],
+        'discord': ['discord'],
+        # Media
         'spotify': ['spotify', 'spotify app'],
         'vlc': ['vlc', 'vlc player'],
+        # System/Dev
+        'system': ['system', 'os', 'operating system'],
+        'git': ['git', 'github'],
+        'docker': ['docker', 'container'],
+        'python': ['python', 'python3'],
+        'node': ['node', 'nodejs', 'npm'],
     }
     
     def __init__(self, model_router: ModelRouter):
